@@ -1,6 +1,6 @@
 # Linear Systems Solver
 
-A GUI-based simple linear system solver built with Rust and egui.
+A simple, GUI-based linear system solver built with Rust and egui.
 
 ## Previews
 
