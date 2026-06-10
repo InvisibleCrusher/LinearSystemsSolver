@@ -150,24 +150,32 @@ impl eframe::App for MyApp {
                 self.error = None;
                 self.solution = None;
 
-                //parse matrix
+                // parse matrix
                 for i in 0..self.matrix.len() {
                     for j in 0..self.matrix[i].len() {
-                        if let Ok(val) = self.matrix[i][j].parse::<f64>() {
-                            self.cleanedmatrix[i][j] = val;
-                        } else {
-                            self.error = Some(format!("error in row {}, column {}", i + 1, j + 1));
+                        match parse_cell(&self.matrix[i][j]) {
+                            Ok(val) => self.cleanedmatrix[i][j] = val,
+                            Err(_) => {
+                                self.error =
+                                    Some(format!("error in row {}, column {}", i + 1, j + 1));
+                                break;
+                            }
                         }
+                    }
+                    if self.error.is_some() {
+                        break;
                     }
                 }
 
-                //parse results
+                // parse results
                 if self.error.is_none() {
                     for i in 0..self.results.len() {
-                        if let Ok(val) = self.results[i].parse::<f64>() {
-                            self.cleanedresults[i] = val;
-                        } else {
-                            self.error = Some(format!("error in result for row {}", i + 1));
+                        match parse_cell(&self.results[i]) {
+                            Ok(val) => self.cleanedresults[i] = val,
+                            Err(_) => {
+                                self.error = Some(format!("error in result for row {}", i + 1));
+                                break;
+                            }
                         }
                     }
                 }
@@ -203,7 +211,8 @@ impl eframe::App for MyApp {
                             .map(|s| s.to_string())
                             .unwrap_or_else(|| format!("x{}", i));
 
-                        let formatted_val = if val.fract() == 0.0 {
+                        //fix for showing -0
+                        let formatted_val = if val.abs() < 1e-10 || val.fract() == 0.0 {
                             format!("{}", val) //shows "7" instead of "7.0000"
                         } else {
                             format!("{:.4}", val) //shows "7.1234"
@@ -280,4 +289,15 @@ fn solve(matrix: Vec<Vec<f64>>, results: Vec<f64>) -> Option<Vec<f64>> {
     }
 
     Some(final_results)
+}
+
+fn parse_cell(text: &str) -> Result<f64, String> {
+    let trimmed = text.trim();
+    if trimmed.is_empty() {
+        Ok(0.0)
+    } else {
+        trimmed
+            .parse::<f64>()
+            .map_err(|_| format!("invalid number: '{}'", text))
+    }
 }
