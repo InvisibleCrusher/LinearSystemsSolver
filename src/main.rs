@@ -3,7 +3,7 @@
 use eframe::egui;
 
 fn main() -> eframe::Result {
-    env_logger::init(); // Log to stderr (if you run with `RUST_LOG=debug`).
+    env_logger::init(); // log to stderr (if you run with `RUST_LOG=debug`).
     let options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default().with_inner_size([800.0, 600.0]),
         ..Default::default()
@@ -12,7 +12,7 @@ fn main() -> eframe::Result {
         "Linear System Solver",
         options,
         Box::new(|cc| {
-            //set zoom after creating the egui context
+            // set zoom after creating the egui context
             cc.egui_ctx.set_zoom_factor(1.5);
             Ok(Box::<MyApp>::default())
         }),
@@ -61,7 +61,7 @@ impl MyApp {
         }
         self.cleanedresults.resize(new_size, 0.0);
 
-        //reset
+        // reset
         self.solution = None;
         self.error = None;
     }
@@ -99,7 +99,7 @@ impl eframe::App for MyApp {
             egui::Grid::new("inputgrid")
                 .spacing(grid_spacing)
                 .show(ui, |ui| {
-                    //header row
+                    // header row
                     for j in 0..self.matrix.len() {
                         let label_text = labels
                             .get(j)
@@ -117,7 +117,7 @@ impl eframe::App for MyApp {
                     ui.label("");
                     ui.end_row();
 
-                    //data rows
+                    // data rows
                     for i in 0..self.matrix.len() {
                         for j in 0..self.matrix[i].len() {
                             ui.allocate_ui_with_layout(
@@ -185,7 +185,7 @@ impl eframe::App for MyApp {
                     }
                 }
 
-                //solve
+                // solve
                 if self.error.is_none() {
                     match solve(self.cleanedmatrix.clone(), self.cleanedresults.clone()) {
                         Ok(res) => {
@@ -202,7 +202,7 @@ impl eframe::App for MyApp {
                 }
             }
 
-            //if there is an error then show it
+            // if there is an error then show it
             if let Some(err_msg) = &self.error {
                 ui.colored_label(egui::Color32::LIGHT_RED, err_msg);
             }
@@ -220,11 +220,11 @@ impl eframe::App for MyApp {
                             .map(|s| s.to_string())
                             .unwrap_or_else(|| format!("x{}", i));
 
-                        //fix for showing -0
+                        // fix for showing -0
                         let formatted_val = if val.abs() < 1e-10 || val.fract() == 0.0 {
-                            format!("{}", val) //shows "7" instead of "7.0000"
+                            format!("{}", val) // shows "7" instead of "7.0000"
                         } else {
-                            format!("{:.4}", val) //shows "7.1234"
+                            format!("{:.4}", val) // shows "7.1234"
                         };
 
                         ui.label(format!("{} = {}", label, formatted_val));
@@ -236,17 +236,17 @@ impl eframe::App for MyApp {
 }
 
 fn solve(matrix: Vec<Vec<f64>>, results: Vec<f64>) -> Result<Vec<f64>, SolveError> {
-    //variable to not repeat code
+    // variable to not repeat code
     let n = matrix.len();
-    //make augmented matrix
+    // make augmented matrix
     let mut augmented = vec![vec![0.0; n + 1]; n];
 
     for i in 0..n {
-        //copy the square matrix
+        // copy the square matrix
         for j in 0..n {
             augmented[i][j] = matrix[i][j];
         }
-        //at the end of each row add the result
+        // at the end of each row add the result
         augmented[i][n] = results[i];
     }
 
@@ -266,7 +266,7 @@ fn solve(matrix: Vec<Vec<f64>>, results: Vec<f64>) -> Result<Vec<f64>, SolveErro
         }
 
         if augmented[collumn][collumn].abs() < 1e-10 {
-            //check if this row means "0 = nonzero" or just dependent equations
+            // check if this row means "0 = nonzero" or just dependent equations
             let left_all_zero = (0..n).all(|j| augmented[collumn][j].abs() < 1e-10);
             let right_nonzero = augmented[collumn][n].abs() >= 1e-10;
 
@@ -294,7 +294,7 @@ fn solve(matrix: Vec<Vec<f64>>, results: Vec<f64>) -> Result<Vec<f64>, SolveErro
         }
         let pivot = augmented[collumn][collumn];
         if pivot.abs() < 1e-10 {
-            //if the number is too close to 0 assume there is no correct solution
+            // if the number is too close to 0 assume there is no correct solution
             return Err(SolveError::InfiniteSolutions);
         }
 
