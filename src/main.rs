@@ -41,6 +41,11 @@ impl Default for MyApp {
     }
 }
 
+enum SolveError {
+    InconsistentSystem,
+    InfiniteSolutions,
+}
+
 impl MyApp {
     pub fn set_size(&mut self, new_size: usize) {
         self.matrix.resize(new_size, vec!["".to_string(); new_size]);
@@ -182,13 +187,17 @@ impl eframe::App for MyApp {
 
                 //solve
                 if self.error.is_none() {
-                    if let Some(res) =
-                        solve(self.cleanedmatrix.clone(), self.cleanedresults.clone())
-                    {
-                        self.solution = Some(res);
-                    } else {
-                        self.error =
-                            Some("system is inconsistent or has no unique solution".to_string());
+                    match solve(self.cleanedmatrix.clone(), self.cleanedresults.clone()) {
+                        Ok(res) => {
+                            self.solution = Some(res);
+                        }
+                        Err(SolveError::InconsistentSystem) => {
+                            self.error = Some("the system has no solution".to_string());
+                        }
+                        Err(SolveError::InfiniteSolutions) => {
+                            self.error =
+                                Some("the system has infinitely many solutions".to_string());
+                        }
                     }
                 }
             }
@@ -226,7 +235,7 @@ impl eframe::App for MyApp {
     }
 }
 
-fn solve(matrix: Vec<Vec<f64>>, results: Vec<f64>) -> Option<Vec<f64>> {
+fn solve(matrix: Vec<Vec<f64>>, results: Vec<f64>) -> Result<Vec<f64>, SolveError> {
     //variable to not repeat code
     let n = matrix.len();
     //make augmented matrix
@@ -245,7 +254,6 @@ fn solve(matrix: Vec<Vec<f64>>, results: Vec<f64>) -> Option<Vec<f64>> {
         let mut max_row = collumn;
         let mut max_val = augmented[collumn][collumn].abs();
 
-        //find the row with the largest value in the current column
         for i in (collumn + 1)..n {
             if augmented[i][collumn].abs() > max_val {
                 max_val = augmented[i][collumn].abs();
@@ -253,19 +261,24 @@ fn solve(matrix: Vec<Vec<f64>>, results: Vec<f64>) -> Option<Vec<f64>> {
             }
         }
 
-        //swap rows if a better pivot was found
         if max_row != collumn {
             augmented.swap(collumn, max_row);
         }
 
         if augmented[collumn][collumn].abs() < 1e-10 {
-            return None; //can't proceed in this case
+            //check if this row means "0 = nonzero" or just dependent equations
+            let left_all_zero = (0..n).all(|j| augmented[collumn][j].abs() < 1e-10);
+            let right_nonzero = augmented[collumn][n].abs() >= 1e-10;
+
+            if left_all_zero && right_nonzero {
+                return Err(SolveError::InconsistentSystem);
+            } else {
+                return Err(SolveError::InfiniteSolutions);
+            }
         }
 
         for row in collumn + 1..n {
-            //calculate the factor
             let factor = augmented[row][collumn] / augmented[collumn][collumn];
-
             for j in collumn..(n + 1) {
                 augmented[row][j] -= factor * augmented[collumn][j];
             }
@@ -282,13 +295,13 @@ fn solve(matrix: Vec<Vec<f64>>, results: Vec<f64>) -> Option<Vec<f64>> {
         let pivot = augmented[collumn][collumn];
         if pivot.abs() < 1e-10 {
             //if the number is too close to 0 assume there is no correct solution
-            return None;
+            return Err(SolveError::InfiniteSolutions);
         }
 
         final_results[collumn] = sum / pivot;
     }
 
-    Some(final_results)
+    Ok(final_results)
 }
 
 fn parse_cell(text: &str) -> Result<f64, String> {
