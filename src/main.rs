@@ -79,7 +79,7 @@ impl eframe::App for MyApp {
                     let new_size = self.matrix.len() + 1;
                     self.set_size(new_size);
                 }
-                if ui.button("Clear").clicked() {
+                if ui.button("Wyczyść").clicked() {
                     for i in 0..self.matrix.len() {
                         for j in 0..self.matrix[i].len() {
                             self.matrix[i][j].clear();
@@ -151,7 +151,7 @@ impl eframe::App for MyApp {
                 });
             ui.add_space(10.0);
 
-            if ui.button("Calculate").clicked() {
+            if ui.button("Oblicz").clicked() {
                 self.error = None;
                 self.solution = None;
 
@@ -162,7 +162,7 @@ impl eframe::App for MyApp {
                             Ok(val) => self.cleanedmatrix[i][j] = val,
                             Err(_) => {
                                 self.error =
-                                    Some(format!("error in row {}, column {}", i + 1, j + 1));
+                                    Some(format!("błąd w wierszu {}, kolumnie {}", i + 1, j + 1));
                                 break;
                             }
                         }
@@ -178,7 +178,7 @@ impl eframe::App for MyApp {
                         match parse_cell(&self.results[i]) {
                             Ok(val) => self.cleanedresults[i] = val,
                             Err(_) => {
-                                self.error = Some(format!("error in result for row {}", i + 1));
+                                self.error = Some(format!("błąd w wyniku dla wiersza {}", i + 1));
                                 break;
                             }
                         }
@@ -192,11 +192,11 @@ impl eframe::App for MyApp {
                             self.solution = Some(res);
                         }
                         Err(SolveError::InconsistentSystem) => {
-                            self.error = Some("the system has no solution".to_string());
+                            self.error = Some("układ nie ma rozwiązania".to_string());
                         }
                         Err(SolveError::InfiniteSolutions) => {
                             self.error =
-                                Some("the system has infinitely many solutions".to_string());
+                                Some("układ ma nieskończenie wiele rozwiązań".to_string());
                         }
                     }
                 }
@@ -210,7 +210,7 @@ impl eframe::App for MyApp {
             if self.error.is_none() {
                 if let Some(solutions) = &self.solution {
                     ui.add_space(10.0);
-                    ui.heading("Solution:");
+                    ui.heading("Rozwiązanie:");
 
                     let labels = ["x", "y", "z", "w", "a", "b", "c", "d", "e", "f"];
 
@@ -311,6 +311,6 @@ fn parse_cell(text: &str) -> Result<f64, String> {
     } else {
         trimmed
             .parse::<f64>()
-            .map_err(|_| format!("invalid number: '{}'", text))
+            .map_err(|_| format!("nieprawidłowa liczba: '{}'", text))
     }
 }
