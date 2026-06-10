@@ -59,6 +59,8 @@ jobs:
     name: Create Release
     needs: build
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: Download Artifacts
         uses: actions/download-artifact@v4
@@ -71,5 +73,4 @@ jobs:
           files: |
             artifacts/linear_system_solver_linux/linear_system_solver_linux
             artifacts/linear_system_solver_windows.exe/linear_system_solver_windows.exe
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.GITHUB_TOKEN }}
