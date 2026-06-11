@@ -237,67 +237,89 @@ impl eframe::App for MyApp {
 
 fn solve(matrix: Vec<Vec<f64>>, results: Vec<f64>) -> Result<Vec<f64>, SolveError> {
     // variable to not repeat code
-    let n = matrix.len();
+    let matrix_size: usize = matrix.len();
     // make augmented matrix
-    let mut augmented = vec![vec![0.0; n + 1]; n];
+    let mut augmented = vec![vec![0.0; matrix_size + 1]; matrix_size];
 
-    for i in 0..n {
+    for i in 0..matrix_size {
         // copy the square matrix
-        for j in 0..n {
+        for j in 0..matrix_size {
             augmented[i][j] = matrix[i][j];
         }
         // at the end of each row add the result
-        augmented[i][n] = results[i];
+        augmented[i][matrix_size] = results[i];
     }
 
-    for collumn in 0..n {
+    for collumn in 0..matrix_size {
+        // PARTIAL PIVOTING
         let mut max_row = collumn;
         let mut max_val = augmented[collumn][collumn].abs();
 
-        for i in (collumn + 1)..n {
+        // scan the rows below to see if any have a bigger number in this column
+        for i in (collumn + 1)..matrix_size {
             if augmented[i][collumn].abs() > max_val {
                 max_val = augmented[i][collumn].abs();
                 max_row = i;
             }
         }
 
+        // if we found a bigger number below, swap that row up to our current position
         if max_row != collumn {
             augmented.swap(collumn, max_row);
         }
 
+        // check for broken rows
+        // if our main diagonal number is basically 0, we can't divide by it
         if augmented[collumn][collumn].abs() < 1e-10 {
-            // check if this row means "0 = nonzero" or just dependent equations
-            let left_all_zero = (0..n).all(|j| augmented[collumn][j].abs() < 1e-10);
-            let right_nonzero = augmented[collumn][n].abs() >= 1e-10;
+            // check if the whole left side of this row turned into zeros
+            let left_all_zero = (0..matrix_size).all(|j| augmented[collumn][j].abs() < 1e-10);
+            // check if the result number on the far right is NOT zero
+            let right_nonzero = augmented[collumn][matrix_size].abs() >= 1e-10;
 
             if left_all_zero && right_nonzero {
+                // for example 0 = 4
                 return Err(SolveError::InconsistentSystem);
             } else {
+                // 0 = 0
                 return Err(SolveError::InfiniteSolutions);
             }
         }
 
-        for row in collumn + 1..n {
+        // ELIMINATION
+        // clean out the numbers directly underneath our current position
+        for row in collumn + 1..matrix_size {
+            // find the multiplier needed to make the target number turn into a 0
             let factor = augmented[row][collumn] / augmented[collumn][collumn];
-            for j in collumn..(n + 1) {
+            
+            // subtract the row
+            for j in collumn..(matrix_size + 1) {
                 augmented[row][j] -= factor * augmented[collumn][j];
             }
         }
     }
 
-    let mut final_results = vec![0.0; n];
+    // create an empty list to store the final answers
+    let mut final_results = vec![0.0; matrix_size];
 
-    for collumn in (0..n).rev() {
-        let mut sum = augmented[collumn][n];
-        for i in (collumn + 1)..n {
+    // BACK SUBSTITUTION
+    // start from the bottom row
+    for collumn in (0..matrix_size).rev() {
+        // start with the result number on the far right side of the equals sign
+        let mut sum = augmented[collumn][matrix_size];
+        
+        // subtract all the variables we already solved in the rows below it.
+        for i in (collumn + 1)..matrix_size {
             sum -= augmented[collumn][i] * final_results[i]
         }
+        
+        // this is the main number multiplying our current variable (on the diagonal)
         let pivot = augmented[collumn][collumn];
+        
         if pivot.abs() < 1e-10 {
-            // if the number is too close to 0 assume there is no correct solution
             return Err(SolveError::InfiniteSolutions);
         }
 
+        // divide by the pivot to get the answer
         final_results[collumn] = sum / pivot;
     }
 
